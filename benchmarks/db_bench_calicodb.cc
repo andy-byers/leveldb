@@ -1,3 +1,7 @@
+// Copyright (c) 2022, The CalicoDB Authors. All rights reserved.
+//
+// This file was modified from db_bench_sqlite3.cc. Original copyright:
+//
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
