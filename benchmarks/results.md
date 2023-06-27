@@ -12,22 +12,22 @@
 
 ### Results (μs/operation)
 
-| Benchmark        |  CalicoDB (0.0.1) | SQLite3 (3.37.2) |  Kyoto Cabinet (1.2.79) |       LevelDB (1.23) |
-|:-----------------|------------------:|-----------------:|------------------------:|---------------------:|
-| `fillseq`        |             2.035 |            2.865 |                   0.807 |                0.924 |
-| `fillseqsync`    |           165.334 |          204.731 |                1796.861 |                      |
-| `fillseqbatch`   |             0.400 |            0.759 |                         |                      |
-| `fillrandom`     |             4.296 |            6.230 |                   3.081 |                1.256 |
-| `fillrandsync`   |           166.913 |          198.992 |                1677.132 |  335.440<sup>*</sup> |
-| `fillrandbatch`  |             4.630 |            6.561 |                         |                      |
-| `overwrite`      |             4.375 |            5.851 |                   4.268 |                1.567 |
-| `overwritebatch` |             4.816 |            5.922 |                         |                      |
-| `readrandom`     |             2.063 |            1.736 |                   2.565 |                1.432 |
-| `readseq`        |             0.050 |            0.089 |                   0.385 |                0.073 |
-| `fillrand100K`   |            88.935 |          196.910 |                  99.039 |  356.504<sup>*</sup> |
-| `fillseq100K`    |            91.179 |          133.427 |                 117.135 |                      |
-| `readseq100K`    |            21.088 |           38.545 |                  16.834 |                      |
-| `readrand100K`   |            21.068 |          100.689 |                  16.184 |                      |
+| Benchmark        |  CalicoDB (5153781f) | SQLite3 (3.37.2) |  Kyoto Cabinet (1.2.79) |       LevelDB (1.23) |
+|:-----------------|---------------------:|-----------------:|------------------------:|---------------------:|
+| `fillseq`        |                2.035 |            2.865 |                   0.807 |                0.924 |
+| `fillseqsync`    |              165.334 |          204.731 |                1796.861 |                      |
+| `fillseqbatch`   |                0.400 |            0.759 |                         |                      |
+| `fillrandom`     |                4.296 |            6.230 |                   3.081 |                1.256 |
+| `fillrandsync`   |              166.913 |          198.992 |                1677.132 |  335.440<sup>*</sup> |
+| `fillrandbatch`  |                4.630 |            6.561 |                         |                      |
+| `overwrite`      |                4.375 |            5.851 |                   4.268 |                1.567 |
+| `overwritebatch` |                4.816 |            5.922 |                         |                      |
+| `readrandom`     |                2.063 |            1.736 |                   2.565 |                1.432 |
+| `readseq`        |                0.050 |            0.089 |                   0.385 |                0.073 |
+| `fillrand100K`   |               88.935 |          196.910 |                  99.039 |  356.504<sup>*</sup> |
+| `fillseq100K`    |               91.179 |          133.427 |                 117.135 |                      |
+| `readseq100K`    |               21.088 |           38.545 |                  16.834 |                      |
+| `readrand100K`   |               21.068 |          100.689 |                  16.184 |                      |
 
 <sup>*</sup> `db_bench.cc` calls these benchmarks `fillsync` and `fill100K`. 
 They insert records in random order, so they are grouped with the `fillrand*`.
