@@ -25,7 +25,8 @@
 //   fillseq100K   -- write N/1000 100K values in sequential order in async mode
 //   readseq       -- read N times sequentially
 //   readrandom    -- read N times in random order
-//   readrand100K  -- read N/1000 100K values in sequential order in async mode
+//   readrand100K  -- read N/1000 100K values in random order in async mode
+//   readseq100K  -- read N/1000 100K values in sequential order in async mode
 static const char* FLAGS_benchmarks =
     "fillseq,"
     "fillseqsync,"
@@ -39,7 +40,7 @@ static const char* FLAGS_benchmarks =
     "readseq,"
     "fillrand100K,"
     "fillseq100K,"
-    "readseq,"
+    "readseq100K,"
     "readrand100K,";
 
 // Number of key/values to place in database
@@ -58,12 +59,12 @@ static bool FLAGS_histogram = false;
 // their original size after compression
 static double FLAGS_compression_ratio = 0.5;
 
-// Page size. Default 1 KB.
-static int FLAGS_page_size = 1024;
+// Page size. Default 4 KB.
+static int FLAGS_page_size = 4096;
 
 // Number of pages.
 // Default cache size = FLAGS_page_size * FLAGS_num_pages = 4 MB.
-static int FLAGS_num_pages = 4096;
+static int FLAGS_num_pages = 1024;
 
 // If true, do not destroy the existing database.  If you set this
 // flag and also specify a benchmark that wants a fresh database, that
@@ -400,6 +401,11 @@ class Benchmark {
         ReadSequential();
       } else if (name == Slice("readrandom")) {
         Read(RANDOM, 1);
+      } else if (name == Slice("readseq100K")) {
+        int n = reads_;
+        reads_ /= 1000;
+        Read(SEQUENTIAL, 1);
+        reads_ = n;
       } else if (name == Slice("readrand100K")) {
         int n = reads_;
         reads_ /= 1000;

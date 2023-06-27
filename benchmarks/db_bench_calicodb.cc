@@ -30,7 +30,8 @@
 //   fillseq100K   -- write N/1000 100K values in sequential order in async mode
 //   readseq       -- read N times sequentially
 //   readrandom    -- read N times in random order
-//   readrand100K  -- read N/1000 100K values in sequential order in async mode
+//   readseq100K  -- read N/1000 100K values in sequential order in async mode
+//   readrand100K  -- read N/1000 100K values in random order in async mode
 static const char* FLAGS_benchmarks =
     "fillseq,"
     "fillseqsync,"
@@ -44,7 +45,7 @@ static const char* FLAGS_benchmarks =
     "readseq,"
     "fillrand100K,"
     "fillseq100K,"
-    "readseq,"
+    "readseq100K,"
     "readrand100K,";
 
 // Number of key/values to place in database
@@ -380,6 +381,11 @@ class Benchmark {
         ReadSequential();
       } else if (name == Slice("readrandom")) {
         Read(RANDOM, 1);
+      } else if (name == Slice("readseq100K")) {
+        int n = reads_;
+        reads_ /= 1000;
+        Read(SEQUENTIAL, 1);
+        reads_ = n;
       } else if (name == Slice("readrand100K")) {
         int n = reads_;
         reads_ /= 1000;
