@@ -469,7 +469,7 @@ int main() {
 
   include(FetchContent)
   FetchContent_Declare(calicodb
-          GIT_REPOSITORY git@github.com:andy-byers/CalicoDB.git
+          GIT_REPOSITORY https://github.com/andy-byers/CalicoDB.git
           GIT_TAG main)
   FetchContent_MakeAvailable(calicodb)
   leveldb_benchmark("benchmarks/db_bench_calicodb.cc")
