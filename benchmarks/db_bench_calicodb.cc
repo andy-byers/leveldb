@@ -76,6 +76,9 @@ static int FLAGS_num_pages = 1024;
 // benchmark will fail.
 static bool FLAGS_use_existing_db = false;
 
+// If true, use kSyncNormal instead of kSyncOff.
+static int FLAGS_use_normal_sync = false;
+
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
@@ -427,10 +430,9 @@ class Benchmark {
     std::snprintf(file_name, sizeof(file_name), "%s/dbbench_calicodb-%d.db",
                   tmp_dir.c_str(), db_num_);
     calicodb::Options options;
-    // Andy: db_bench_sqlite3 sets the value of "synchronous" to either "FULL"
-    //       or "OFF" (not "NORMAL").
     options.sync_mode = full_sync ? calicodb::Options::kSyncFull
-                                  : calicodb::Options::kSyncOff;
+                                  : (FLAGS_use_normal_sync ? calicodb::Options::kSyncNormal
+                                                           : calicodb::Options::kSyncOff);
     options.lock_mode = calicodb::Options::kLockExclusive;
     options.cache_size = FLAGS_num_pages * FLAGS_page_size;
     status = calicodb::DB::open(options, file_name, db_);
@@ -500,17 +502,6 @@ class Benchmark {
           return s;
       });
       ErrorCheck(status);
-
-      // TODO: This block tries to simulate the SQLite PRAGMA "wal_autocheckpoint"
-      //       using the number of bytes of payload written. Should implement an
-      //       autocheckpoint option for CalicoDB. For now, just run a checkpoint
-      //       after 8 pages-worth of record has been added.
-      const auto added_bytes = bytes_ - prev_bytes;
-      if (added_bytes / FLAGS_page_size >= 8) {
-        status = db_->checkpoint(true);
-        prev_bytes = bytes_;
-        ErrorCheck(status);
-      }
     }
   }
 
@@ -585,11 +576,11 @@ int main(int argc, char** argv) {
     char junk;
     if (leveldb::Slice(argv[i]).starts_with("--benchmarks=")) {
       FLAGS_benchmarks = argv[i] + strlen("--benchmarks=");
+    } else if (leveldb::Slice(argv[i]).starts_with("--use_normal_sync")) {
+      FLAGS_use_normal_sync = true;
     } else if (sscanf(argv[i], "--histogram=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_histogram = n;
-    } else if (sscanf(argv[i], "--compression_ratio=%lf%c", &d, &junk) == 1) {
-      FLAGS_compression_ratio = d;
     } else if (sscanf(argv[i], "--use_existing_db=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_use_existing_db = n;

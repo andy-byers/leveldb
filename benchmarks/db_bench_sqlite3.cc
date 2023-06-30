@@ -80,6 +80,9 @@ static bool FLAGS_transaction = true;
 // If true, we enable Write-Ahead Logging
 static bool FLAGS_WAL_enabled = true;
 
+// If true, use sync mode NORMAL instead of OFF.
+static int FLAGS_use_normal_sync = false;
+
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
@@ -516,7 +519,9 @@ class Benchmark {
 
     // Check for synchronous flag in options
     std::string sync_stmt =
-        (write_sync) ? "PRAGMA synchronous = FULL" : "PRAGMA synchronous = OFF";
+        (write_sync) ? "PRAGMA synchronous = FULL"
+                     : (FLAGS_use_normal_sync ? "PRAGMA synchronous = NORMAL"
+                                              : "PRAGMA synchronous = OFF");
     status = sqlite3_exec(db_, sync_stmt.c_str(), nullptr, nullptr, &err_msg);
     ExecErrorCheck(status, err_msg);
 
@@ -685,6 +690,8 @@ int main(int argc, char** argv) {
     char junk;
     if (leveldb::Slice(argv[i]).starts_with("--benchmarks=")) {
       FLAGS_benchmarks = argv[i] + strlen("--benchmarks=");
+    } else if (leveldb::Slice(argv[i]).starts_with("--use_normal_sync")) {
+      FLAGS_use_normal_sync = true;
     } else if (sscanf(argv[i], "--histogram=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_histogram = n;
