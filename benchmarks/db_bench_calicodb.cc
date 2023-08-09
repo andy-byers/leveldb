@@ -473,9 +473,8 @@ class Benchmark {
     for (int i = 0; i < num_entries; i += entries_per_batch) {
       // Begin write transaction
       status = db_->update([this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
-          calicodb::Bucket b;
-          calicodb::Status s = tx.create_bucket(
-              calicodb::BucketOptions(), "default", &b);
+          calicodb::Cursor *c;
+          calicodb::Status s = tx.open_bucket("default", c);
           if (!s.is_ok()) {
             return s;
           }
@@ -492,8 +491,9 @@ class Benchmark {
             const calicodb::Slice _k(key, 16);
             const calicodb::Slice _v(value, value_size);
             bytes_ += static_cast<std::int64_t>(_k.size() + _v.size());
-            s = tx.put(b, _k, _v);
+            s = tx.put(*c, _k, _v);
             if (!s.is_ok()) {
+              std::cerr << "write error: " << s.to_string() << '\n';
               break;
             }
 
@@ -510,8 +510,8 @@ class Benchmark {
 
     for (int i = 0; i < reads_; i += entries_per_batch) {
       status = db_->view([this, entries_per_batch, i, order](const auto &tx) {
-        calicodb::Bucket b;
-        calicodb::Status s = tx.open_bucket("default", b);
+        calicodb::Cursor *c;
+        calicodb::Status s = tx.open_bucket("default", c);
         if (!s.is_ok()) {
           return s;
         }
@@ -523,7 +523,7 @@ class Benchmark {
 
           std::string value;
           const calicodb::Slice _k(key, 16);
-          s = tx.get(b, _k, &value);
+          s = tx.get(*c, _k, &value);
           if (s.is_not_found()) {
             s = calicodb::Status::ok();
           }
@@ -542,12 +542,11 @@ class Benchmark {
   void ReadSequential() {
     calicodb::Status status;
     status = db_->view([this](const auto &tx) {
-      calicodb::Bucket b;
-      calicodb::Status s = tx.open_bucket("default", b);
+      calicodb::Cursor *c;
+      calicodb::Status s = tx.open_bucket("default", c);
       if (!s.is_ok()) {
         return s;
       }
-      calicodb::Cursor *c = tx.new_cursor(b);
       for (int i = 0; i < reads_; i++) {
         if (!c->is_valid()) {
           c->seek_first();
