@@ -84,7 +84,7 @@ static const char* FLAGS_db = nullptr;
 
 inline static void ErrorCheck(const calicodb::Status &status) {
   if (!status.is_ok()) {
-    std::fprintf(stderr, "calicodb error: status = %s\n", status.to_string().c_str());
+    std::fprintf(stderr, "calicodb error: status = %s: %s\n", status.type_name(), status.message());
     std::exit(1);
   }
 }
@@ -410,11 +410,11 @@ class Benchmark {
   }
 
   void PrintStats(const char* key) {
-    std::string stats;
+    calicodb::Slice stats;
     if (!db_->get_property(key, &stats)) {
       stats = "(failed)";
     }
-    std::fprintf(stdout, "\n%s\n", stats.c_str());
+    std::fprintf(stdout, "\n%s\n", stats.data());
   }
 
   void Open(bool full_sync) {
@@ -435,9 +435,10 @@ class Benchmark {
                                                            : calicodb::Options::kSyncOff);
     options.lock_mode = calicodb::Options::kLockExclusive;
     options.cache_size = FLAGS_num_pages * FLAGS_page_size;
+    (void)calicodb::DB::destroy(options, file_name);
     status = calicodb::DB::open(options, file_name, db_);
     if (!status.is_ok()) {
-      std::fprintf(stderr, "open error: %s\n", status.to_string().c_str());
+      std::fprintf(stderr, "open error: %s: %s\n", status.type_name(), status.message());
       std::exit(1);
     }
 
@@ -493,7 +494,7 @@ class Benchmark {
             bytes_ += static_cast<std::int64_t>(_k.size() + _v.size());
             s = tx.put(*c, _k, _v);
             if (!s.is_ok()) {
-              std::cerr << "write error: " << s.to_string() << '\n';
+              std::cerr << "write error: " << s.type_name() << ": " << s.message() << '\n';
               break;
             }
 
@@ -523,7 +524,8 @@ class Benchmark {
 
           std::string value;
           const calicodb::Slice _k(key, 16);
-          s = tx.get(*c, _k, &value);
+          c->find(_k);
+          s = c->status();
           if (s.is_not_found()) {
             s = calicodb::Status::ok();
           }
