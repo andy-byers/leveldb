@@ -8,6 +8,8 @@
 
 #include <calicodb/cursor.h>
 #include <calicodb/db.h>
+#include <calicodb/string.h>
+#include <calicodb/tx.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -84,7 +86,7 @@ static const char* FLAGS_db = nullptr;
 
 inline static void ErrorCheck(const calicodb::Status &status) {
   if (!status.is_ok()) {
-    std::fprintf(stderr, "calicodb error: status = %s: %s\n", status.type_name(), status.message());
+    std::fprintf(stderr, "calicodb error: status = %s\n", status.message());
     std::exit(1);
   }
 }
@@ -410,11 +412,13 @@ class Benchmark {
   }
 
   void PrintStats(const char* key) {
-    calicodb::Slice stats;
-    if (!db_->get_property(key, &stats)) {
-      stats = "(failed)";
+    calicodb::String stats;
+    const auto s = db_->get_property(key, &stats);
+    if (s.is_ok()) {
+      std::fprintf(stdout, "\n%s\n", stats.c_str());
+    } else {
+      std::fprintf(stderr, "failed: %s\n", s.message());
     }
-    std::fprintf(stdout, "\n%s\n", stats.data());
   }
 
   void Open(bool full_sync) {
@@ -438,11 +442,11 @@ class Benchmark {
     (void)calicodb::DB::destroy(options, file_name);
     status = calicodb::DB::open(options, file_name, db_);
     if (!status.is_ok()) {
-      std::fprintf(stderr, "open error: %s: %s\n", status.type_name(), status.message());
+      std::fprintf(stderr, "open error: %s\n", status.message());
       std::exit(1);
     }
 
-    status = db_->update([](auto &tx) {
+    status = db_->run(calicodb::WriteOptions(), [](auto &tx) {
       return tx.create_bucket(calicodb::BucketOptions(), "default", nullptr);
     });
     ErrorCheck(status);
@@ -473,7 +477,7 @@ class Benchmark {
 
     for (int i = 0; i < num_entries; i += entries_per_batch) {
       // Begin write transaction
-      status = db_->update([this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
+      status = db_->run(calicodb::WriteOptions(), [this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
           calicodb::Cursor *c;
           calicodb::Status s = tx.open_bucket("default", c);
           if (!s.is_ok()) {
@@ -494,7 +498,7 @@ class Benchmark {
             bytes_ += static_cast<std::int64_t>(_k.size() + _v.size());
             s = tx.put(*c, _k, _v);
             if (!s.is_ok()) {
-              std::cerr << "write error: " << s.type_name() << ": " << s.message() << '\n';
+              std::cerr << "write error: " << s.message() << '\n';
               break;
             }
 
@@ -510,7 +514,7 @@ class Benchmark {
     calicodb::Status status;
 
     for (int i = 0; i < reads_; i += entries_per_batch) {
-      status = db_->view([this, entries_per_batch, i, order](const auto &tx) {
+      status = db_->run(calicodb::ReadOptions(), [this, entries_per_batch, i, order](const auto &tx) {
         calicodb::Cursor *c;
         calicodb::Status s = tx.open_bucket("default", c);
         if (!s.is_ok()) {
@@ -543,7 +547,7 @@ class Benchmark {
 
   void ReadSequential() {
     calicodb::Status status;
-    status = db_->view([this](const auto &tx) {
+    status = db_->run(calicodb::ReadOptions(), [this](const auto &tx) {
       calicodb::Cursor *c;
       calicodb::Status s = tx.open_bucket("default", c);
       if (!s.is_ok()) {
