@@ -66,8 +66,8 @@ static bool FLAGS_histogram = false;
 // their original size after compression
 static double FLAGS_compression_ratio = 0.5;
 
-// Page size. Default 4 KB. (must be 4 KB right now - Andy)
-static int FLAGS_page_size = calicodb::kPageSize;
+// Page size. Default 4 KB.
+static int FLAGS_page_size = 4096;
 
 // Number of pages.
 // Default cache size = FLAGS_page_size * FLAGS_num_pages = 4 MB.
