@@ -8,7 +8,6 @@
 
 #include <calicodb/cursor.h>
 #include <calicodb/db.h>
-#include <calicodb/string.h>
 #include <calicodb/tx.h>
 
 #include <cstdio>
@@ -412,7 +411,7 @@ class Benchmark {
   }
 
   void PrintStats(const char* key) {
-    calicodb::String stats;
+    std::string stats;
     const auto s = db_->get_property(key, &stats);
     if (s.is_ok()) {
       std::fprintf(stdout, "\n%s\n", stats.c_str());
