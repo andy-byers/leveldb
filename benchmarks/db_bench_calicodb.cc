@@ -92,7 +92,7 @@ inline static void ErrorCheck(const calicodb::Status &status) {
 
 inline static void WalCheckpoint(calicodb::DB* db_) {
   // Flush all writes to disk
-  ErrorCheck(db_->checkpoint(true));
+  ErrorCheck(db_->checkpoint(calicodb::kCheckpointRestart, nullptr));
 }
 
 namespace leveldb {
