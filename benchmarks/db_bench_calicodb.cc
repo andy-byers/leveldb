@@ -411,10 +411,19 @@ class Benchmark {
   }
 
   void PrintStats(const char* key) {
-    std::string stats;
+    calicodb::Stats stats;
     const auto s = db_->get_property(key, &stats);
     if (s.is_ok()) {
-      std::fprintf(stdout, "\n%s\n", stats.c_str());
+      std::fprintf(stdout, "\ncache_hits = %llu\ncache_misses = %llu\n"
+                           "read_db = %llu\nwrite_db = %llu\n"
+                           "sync_db = %llu\nread_wal = %llu\n"
+                           "write_wal = %llu\nsync_wal = %llu\n"
+                           "tree_smo = %llu\n",
+                   stats.cache_hits, stats.cache_misses,
+                   stats.read_db, stats.write_db,
+                   stats.sync_db, stats.read_wal,
+                   stats.write_wal, stats.sync_wal,
+                   stats.tree_smo);
     } else {
       std::fprintf(stderr, "failed: %s\n", s.message());
     }
@@ -445,7 +454,7 @@ class Benchmark {
       std::exit(1);
     }
 
-    status = db_->run(calicodb::WriteOptions(), [](auto &tx) {
+    status = db_->update([](auto &tx) {
       return tx.create_bucket(calicodb::BucketOptions(), "default", nullptr);
     });
     ErrorCheck(status);
@@ -476,7 +485,7 @@ class Benchmark {
 
     for (int i = 0; i < num_entries; i += entries_per_batch) {
       // Begin write transaction
-      status = db_->run(calicodb::WriteOptions(), [this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
+      status = db_->update([this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
           calicodb::Cursor *c;
           calicodb::Status s = tx.open_bucket("default", c);
           if (!s.is_ok()) {
@@ -513,7 +522,7 @@ class Benchmark {
     calicodb::Status status;
 
     for (int i = 0; i < reads_; i += entries_per_batch) {
-      status = db_->run(calicodb::ReadOptions(), [this, entries_per_batch, i, order](const auto &tx) {
+      status = db_->view([this, entries_per_batch, i, order](const auto &tx) {
         calicodb::Cursor *c;
         calicodb::Status s = tx.open_bucket("default", c);
         if (!s.is_ok()) {
@@ -546,7 +555,7 @@ class Benchmark {
 
   void ReadSequential() {
     calicodb::Status status;
-    status = db_->run(calicodb::ReadOptions(), [this](const auto &tx) {
+    status = db_->view([this](const auto &tx) {
       calicodb::Cursor *c;
       calicodb::Status s = tx.open_bucket("default", c);
       if (!s.is_ok()) {
