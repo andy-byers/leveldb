@@ -414,16 +414,20 @@ class Benchmark {
     calicodb::Stats stats;
     const auto s = db_->get_property(key, &stats);
     if (s.is_ok()) {
-      std::fprintf(stdout, "\ncache_hits = %llu\ncache_misses = %llu\n"
-                           "read_db = %llu\nwrite_db = %llu\n"
-                           "sync_db = %llu\nread_wal = %llu\n"
-                           "write_wal = %llu\nsync_wal = %llu\n"
-                           "tree_smo = %llu\n",
-                   stats.cache_hits, stats.cache_misses,
-                   stats.read_db, stats.write_db,
-                   stats.sync_db, stats.read_wal,
-                   stats.write_wal, stats.sync_wal,
-                   stats.tree_smo);
+      std::fprintf(stdout, "\ncache_hits = %u\ncache_misses = %u\n"
+                           "read_db = %u\nwrite_db = %u\n"
+                           "sync_db = %u\nread_wal = %u\n"
+                           "write_wal = %u\nsync_wal = %u\n"
+                           "tree_smo = %u\n",
+                   static_cast<uint32_t>(stats.cache_hits), 
+                   static_cast<uint32_t>(stats.cache_misses),
+                   static_cast<uint32_t>(stats.read_db), 
+                   static_cast<uint32_t>(stats.write_db),
+                   static_cast<uint32_t>(stats.sync_db), 
+                   static_cast<uint32_t>(stats.read_wal),
+                   static_cast<uint32_t>(stats.write_wal), 
+                   static_cast<uint32_t>(stats.sync_wal),
+                   static_cast<uint32_t>(stats.tree_smo));
     } else {
       std::fprintf(stderr, "failed: %s\n", s.message());
     }
