@@ -6,6 +6,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <calicodb/bucket.h>
 #include <calicodb/cursor.h>
 #include <calicodb/db.h>
 #include <calicodb/tx.h>
@@ -419,13 +420,13 @@ class Benchmark {
                            "sync_db = %u\nread_wal = %u\n"
                            "write_wal = %u\nsync_wal = %u\n"
                            "tree_smo = %u\n",
-                   static_cast<uint32_t>(stats.cache_hits), 
+                   static_cast<uint32_t>(stats.cache_hits),
                    static_cast<uint32_t>(stats.cache_misses),
-                   static_cast<uint32_t>(stats.read_db), 
+                   static_cast<uint32_t>(stats.read_db),
                    static_cast<uint32_t>(stats.write_db),
-                   static_cast<uint32_t>(stats.sync_db), 
+                   static_cast<uint32_t>(stats.sync_db),
                    static_cast<uint32_t>(stats.read_wal),
-                   static_cast<uint32_t>(stats.write_wal), 
+                   static_cast<uint32_t>(stats.write_wal),
                    static_cast<uint32_t>(stats.sync_wal),
                    static_cast<uint32_t>(stats.tree_smo));
     } else {
@@ -457,11 +458,6 @@ class Benchmark {
       std::fprintf(stderr, "open error: %s\n", status.message());
       std::exit(1);
     }
-
-    status = db_->update([](auto &tx) {
-      return tx.create_bucket(calicodb::BucketOptions(), "default", nullptr);
-    });
-    ErrorCheck(status);
   }
 
   void Write(bool write_sync, Order order, DBState state, int num_entries,
@@ -490,12 +486,8 @@ class Benchmark {
     for (int i = 0; i < num_entries; i += entries_per_batch) {
       // Begin write transaction
       status = db_->update([this, entries_per_batch, i, num_entries, order, value_size](auto &tx) {
-          calicodb::Cursor *c;
-          calicodb::Status s = tx.open_bucket("default", c);
-          if (!s.is_ok()) {
-            return s;
-          }
-
+          calicodb::Status s;
+          calicodb::Bucket *b = &tx.main_bucket();
           for (int j = 0; j < entries_per_batch; j++) {
             const char* value = gen_.Generate(value_size).data();
 
@@ -508,12 +500,11 @@ class Benchmark {
             const calicodb::Slice _k(key, 16);
             const calicodb::Slice _v(value, value_size);
             bytes_ += static_cast<std::int64_t>(_k.size() + _v.size());
-            s = tx.put(*c, _k, _v);
+            s = b->put(_k, _v);
             if (!s.is_ok()) {
               std::cerr << "write error: " << s.message() << '\n';
               break;
             }
-
             FinishedSingleOp();
           }
           return s;
@@ -527,11 +518,8 @@ class Benchmark {
 
     for (int i = 0; i < reads_; i += entries_per_batch) {
       status = db_->view([this, entries_per_batch, i, order](const auto &tx) {
-        calicodb::Cursor *c;
-        calicodb::Status s = tx.open_bucket("default", c);
-        if (!s.is_ok()) {
-          return s;
-        }
+        calicodb::Status s;
+        calicodb::Bucket *b = &tx.main_bucket();
         for (int j = 0; j < entries_per_batch; j++) {
           // Create key value
           char key[100];
@@ -540,8 +528,7 @@ class Benchmark {
 
           std::string value;
           const calicodb::Slice _k(key, 16);
-          c->find(_k);
-          s = c->status();
+          s = b->get(_k, &value);
           if (s.is_not_found()) {
             s = calicodb::Status::ok();
           }
@@ -560,11 +547,8 @@ class Benchmark {
   void ReadSequential() {
     calicodb::Status status;
     status = db_->view([this](const auto &tx) {
-      calicodb::Cursor *c;
-      calicodb::Status s = tx.open_bucket("default", c);
-      if (!s.is_ok()) {
-        return s;
-      }
+      calicodb::Bucket *b = &tx.main_bucket();
+      auto *c = b->new_cursor();
       for (int i = 0; i < reads_; i++) {
         if (!c->is_valid()) {
           c->seek_first();
@@ -574,7 +558,7 @@ class Benchmark {
         c->next();
         FinishedSingleOp();
       }
-      s = c->status();
+      calicodb::Status s = c->status();
       delete c;
       return s;
     });
