@@ -447,6 +447,7 @@ class Benchmark {
     std::snprintf(file_name, sizeof(file_name), "%s/dbbench_calicodb-%d.db",
                   tmp_dir.c_str(), db_num_);
     calicodb::Options options;
+    options.create_if_missing = true;
     options.sync_mode = full_sync ? calicodb::Options::kSyncFull
                                   : (FLAGS_use_normal_sync ? calicodb::Options::kSyncNormal
                                                            : calicodb::Options::kSyncOff);
